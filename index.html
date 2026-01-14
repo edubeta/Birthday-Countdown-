@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Birthday Countdown</title>
+    <title>Premium Birthday Countdown</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,11 +20,11 @@
         :root {
             --accent: #ffffff;
             --glass: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --safe-top: env(safe-area-inset-top);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --zoom-level: 1;
         }
 
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; touch-action: none; }
 
         body, html {
             margin: 0; padding: 0; height: 100%; width: 100%;
@@ -33,103 +33,75 @@
             overflow: hidden;
         }
 
-        /* AI Fit Background */
         #bg-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover; background-position: center 20%;
-            transition: background-image 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: -1;
+            background-size: cover; background-position: center;
+            z-index: -1; transform: scale(1.05); transition: 0.5s ease-out;
         }
+
         #bg-overlay {
             position: absolute; inset: 0;
-            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%),
-                        linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.8));
         }
 
-        /* Main Viewport */
-        #viewport {
+        #main-stage {
             height: 100dvh; display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            padding-top: var(--safe-top);
+            transform: scale(var(--zoom-level));
+            transition: transform 0.2s ease-out;
         }
 
-        .status-badge {
-            background: var(--glass);
-            backdrop-filter: blur(15px);
-            padding: 8px 20px;
-            border-radius: 100px;
-            border: 1px solid var(--glass-border);
-            font-size: 10px;
-            letter-spacing: 3px;
-            font-weight: 800;
-            margin-bottom: 40px;
-            text-transform: uppercase;
-        }
-
-        /* FlipClock Customization - iOS Style */
-        .clock-wrapper { transform: scale(1.1); }
-        .flip-clock-wrapper ul { width: 45px; height: 65px; margin: 2px; }
-        .flip-clock-wrapper ul li { line-height: 65px; }
+        /* Clock Styling */
         .flip-clock-wrapper ul li a div div.inn { 
-            background-color: #1a1a1a !important; color: var(--accent) !important;
-            font-size: 36px !important; border-radius: 12px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            background-color: rgba(20,20,20,0.8) !important; color: var(--accent) !important;
+            backdrop-filter: blur(10px); border: 1px solid var(--glass-border);
         }
-        .flip-clock-divider .flip-clock-label { color: #ccc !important; font-size: 10px; bottom: -2em; }
 
-        /* Swipeable Bottom Toolbox */
+        /* Drawer Tab (Always Visible) */
+        .drawer-tab {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 35px; background: var(--glass);
+            backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+            border-bottom: none; border-radius: 15px 15px 0 0;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 999; cursor: pointer;
+        }
+
+        /* Drawer Box */
         #tool-drawer {
-            position: fixed; bottom: -350px; left: 0; width: 100%;
-            background: rgba(20, 20, 20, 0.85);
-            backdrop-filter: blur(30px) saturate(180%);
-            -webkit-backdrop-filter: blur(30px) saturate(180%);
-            border-top: 0.5px solid var(--glass-border);
+            position: fixed; bottom: -420px; left: 0; width: 100%;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(40px); border-top: 1px solid var(--glass-border);
             border-radius: 30px 30px 0 0;
-            padding: 20px; transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-            z-index: 1000; height: 400px;
+            padding: 30px 20px; transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 1000; height: 420px;
+        }
+        #tool-drawer.open { transform: translateY(-420px); }
+
+        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .input-group { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 15px; border: 1px solid var(--glass-border); }
+        .input-group label { font-size: 9px; font-weight: 800; color: #777; letter-spacing: 1px; }
+        input { background: transparent; border: none; color: #fff; width: 100%; font-size: 14px; margin-top: 5px; outline: none; }
+
+        /* PC Controls */
+        .pc-zoom-controls {
+            position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 100;
+        }
+        .btn-circle {
+            width: 40px; height: 40px; border-radius: 50%; background: var(--glass);
+            border: 1px solid var(--glass-border); color: #fff; cursor: pointer; font-size: 20px;
         }
 
-        #tool-drawer.open { transform: translateY(-350px); }
-
-        .handle {
-            width: 40px; height: 5px; background: rgba(255,255,255,0.3);
-            border-radius: 10px; margin: 0 auto 25px; cursor: pointer;
-        }
-
-        .tool-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;
-        }
-
-        .input-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 20px; border: 1px solid var(--glass-border); }
-        .input-group label { display: block; font-size: 10px; font-weight: 800; margin-bottom: 8px; color: #888; }
-        
-        input {
-            background: transparent; border: none; color: #fff; width: 100%;
-            font-family: inherit; font-size: 16px; outline: none;
-        }
-
-        .action-btn {
-            background: #fff; color: #000; border: none; padding: 18px;
-            border-radius: 20px; font-weight: 800; width: 100%; margin-top: 15px;
-            font-size: 14px; transition: 0.2s;
-        }
-        .action-btn:active { transform: scale(0.96); opacity: 0.8; }
-
-        /* Celebration Screen */
+        /* Birthday Overlay */
         #celebration-overlay {
             position: fixed; inset: 0; display: none; z-index: 5000;
-            background: rgba(0,0,0,0.9); flex-direction: column;
-            justify-content: center; align-items: center; text-align: center;
+            background: radial-gradient(circle, transparent, #000);
+            flex-direction: column; justify-content: center; align-items: center;
+            animation: fadeIn 2s forwards;
         }
-        #celebration-overlay h1 { font-family: 'Syncopate'; font-size: 2.5rem; color: #fff; }
-
-        .ios-share-trigger {
-            position: fixed; bottom: 30px; right: 20px;
-            width: 50px; height: 50px; background: var(--glass);
-            backdrop-filter: blur(10px); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            border: 1px solid var(--glass-border); z-index: 500;
-        }
+        .bday-title { font-family: 'Syncopate'; font-size: 3rem; text-align: center; line-height: 1; margin-bottom: 20px; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -138,148 +110,152 @@
         <div id="bg-overlay"></div>
     </div>
 
-    <div id="viewport">
-        <div class="status-badge" id="badge">Birthday is coming...</div>
-        <div class="clock-wrapper">
-            <div id="main-clock"></div>
-        </div>
+    <div id="main-stage">
+        <div id="main-clock"></div>
     </div>
 
-    <div class="ios-share-trigger" onclick="toggleDrawer()">⚙️</div>
+    <div class="pc-zoom-controls">
+        <button class="btn-circle" onclick="adjustZoom(0.1)">+</button>
+        <button class="btn-circle" onclick="adjustZoom(-0.1)">-</button>
+    </div>
+
+    <div class="drawer-tab" onclick="toggleDrawer()">
+        <span style="font-size: 12px; opacity: 0.5;">▲</span>
+    </div>
 
     <div id="tool-drawer">
-        <div class="handle" onclick="toggleDrawer()"></div>
+        <div style="width:40px; height:4px; background:rgba(255,255,255,0.2); margin: -10px auto 20px; border-radius:10px;"></div>
         <div class="tool-grid">
             <div class="input-group">
-                <label>MONTH & DAY</label>
+                <label>BIRTHDAY DATE</label>
                 <input type="date" id="bday-date">
             </div>
             <div class="input-group">
-                <label>TIME</label>
-                <input type="time" id="bday-time" value="00:00">
+                <label>TARGET TIME</label>
+                <input type="time" id="bday-time">
             </div>
             <div class="input-group" style="grid-column: span 2;">
-                <label>THEME COLOR (ACCENT)</label>
-                <input type="color" id="accent-color" value="#ffffff">
+                <label>CHOOSE PERSON'S PHOTO</label>
+                <input type="file" id="bg-upload" accept="image/*" onchange="previewImage(this)">
             </div>
             <div class="input-group" style="grid-column: span 2;">
-                <label>PORTRAIT PHOTO (AI FIT)</label>
-                <input type="file" id="bg-upload" accept="image/*" style="font-size: 10px;">
+                <label>ACCENT COLOR</label>
+                <input type="color" id="accent-color" style="height:30px">
             </div>
         </div>
-        <button class="action-btn" onclick="applySettings()">SAVE SETTINGS</button>
-        <button class="action-btn" style="background:transparent; color:#fff; border:1px solid #333;" onclick="snapShare()">SCREENSHOT & SHARE</button>
+        <button style="width:100%; padding:15px; border-radius:15px; margin-top:20px; background:#fff; font-weight:800; border:none;" onclick="saveConfig()">APPLY & REFRESH</button>
+        <button style="width:100%; padding:15px; border-radius:15px; margin-top:10px; background:transparent; border:1px solid #333; color:#fff;" onclick="snapShare()">SAVE SCREENSHOT</button>
     </div>
 
     <div id="celebration-overlay">
-        <h1 id="bday-msg">HAPPY BIRTHDAY!</h1>
-        <button class="action-btn" style="width: 200px" onclick="location.reload()">RESTART</button>
+        <div style="font-size: 12px; letter-spacing: 5px; margin-bottom: 10px;">CELEBRATING</div>
+        <h1 class="bday-title">HAPPY<br>BIRTHDAY</h1>
+        <button style="padding:10px 30px; border-radius:30px; background:var(--accent); color:#000; border:none; font-weight:800;" onclick="location.reload()">RESET</button>
     </div>
 
     <script>
-        let clock;
-        const drawer = document.getElementById('tool-drawer');
+        let zoom = 1.0;
+        let lastTouchDistance = 0;
+        let lastTapTime = 0;
 
         $(document).ready(() => {
-            loadSavedData();
-            // Handle simple swipe down to close
-            let startY;
-            drawer.addEventListener('touchstart', e => startY = e.touches[0].clientY);
-            drawer.addEventListener('touchmove', e => {
-                let moveY = e.touches[0].clientY;
-                if (moveY - startY > 50) toggleDrawer(false);
-            });
+            init();
+            setupInteractions();
         });
 
-        function loadSavedData() {
-            const date = localStorage.getItem('pwa_bday_date') || '12-31';
-            const time = localStorage.getItem('pwa_bday_time') || '00:00';
-            const img = localStorage.getItem('pwa_bday_img');
-            const color = localStorage.getItem('pwa_bday_color') || '#ffffff';
+        function init() {
+            const date = localStorage.getItem('b_date') || '12-31';
+            const time = localStorage.getItem('b_time') || '00:00';
+            const img = localStorage.getItem('b_img');
+            const color = localStorage.getItem('b_color') || '#ffffff';
 
-            if(img) document.getElementById('bg-container').style.backgroundImage = `url(${img})`;
-            else document.getElementById('bg-container').style.backgroundImage = `url('https://images.unsplash.com/photo-1464349172904-124bb544f80a?q=80&w=2000')`;
+            if(img) $('#bg-container').css('background-image', `url(${img})`);
+            else $('#bg-container').css('background-image', `url('https://images.unsplash.com/photo-1530103043960-ef38714abb15?q=80&w=2000')`);
             
             document.documentElement.style.setProperty('--accent', color);
-            startLogic(date, time);
-        }
-
-        function startLogic(dateStr, timeStr) {
-            // dateStr format expected: "MM-DD"
-            const parts = dateStr.split('-');
-            const month = parseInt(parts[1]) - 1;
-            const day = parseInt(parts[2]);
-            const timeParts = timeStr.split(':');
+            
+            const [m, d] = date.includes('-') ? [date.split('-')[1], date.split('-')[2]] : [12, 31];
+            const [h, min] = time.split(':');
             
             let now = new Date();
-            let target = new Date(now.getFullYear(), month, day, timeParts[0], timeParts[1]);
-
-            // Auto-Year Logic: If date passed this year, set to next year
-            if (target < now) {
-                target.setFullYear(now.getFullYear() + 1);
-            }
+            let target = new Date(now.getFullYear(), m-1, d, h || 0, min || 0);
+            if (target < now) target.setFullYear(now.getFullYear() + 1);
 
             let diff = (target.getTime() / 1000) - (now.getTime() / 1000);
             
-            clock = $('#main-clock').FlipClock(diff, {
+            $('#main-clock').FlipClock(diff, {
                 clockFace: 'DailyCounter',
                 countdown: true,
-                callbacks: {
-                    stop: () => triggerCelebration()
-                }
+                callbacks: { stop: () => showBirthday() }
             });
         }
 
-        function applySettings() {
-            const dateVal = document.getElementById('bday-date').value; // YYYY-MM-DD
-            const timeVal = document.getElementById('bday-time').value;
-            const colorVal = document.getElementById('accent-color').value;
-            const file = document.getElementById('bg-upload').files[0];
-
-            if (dateVal) localStorage.setItem('pwa_bday_date', dateVal);
-            localStorage.setItem('pwa_bday_time', timeVal);
-            localStorage.setItem('pwa_bday_color', colorVal);
-
-            if (file) {
+        // --- Fixing Image Storage ---
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onloadend = () => {
-                    localStorage.setItem('pwa_bday_img', reader.result);
-                    location.reload();
-                };
-                reader.readAsDataURL(file);
-            } else {
-                location.reload();
+                reader.onload = (e) => localStorage.setItem('b_img', e.target.result);
+                reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function triggerCelebration() {
-            $('#celebration-overlay').css('display', 'flex');
-            const end = Date.now() + (15 * 1000);
-            const colors = ['#ffffff', document.documentElement.style.getPropertyValue('--accent')];
-
-            (function frame() {
-                confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors: colors });
-                confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
-                if (Date.now() < end) requestAnimationFrame(frame);
-            }());
+        function saveConfig() {
+            localStorage.setItem('b_date', $('#bday-date').val());
+            localStorage.setItem('b_time', $('#bday-time').val());
+            localStorage.setItem('b_color', $('#accent-color').val());
+            setTimeout(() => location.reload(), 500);
         }
 
+        // --- Zoom & Interaction Logic ---
+        function setupInteractions() {
+            // Double Tap for Android/iOS Fullscreen
+            window.addEventListener('touchstart', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTapTime;
+                if (tapLength < 300 && tapLength > 0) {
+                    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+                    else document.exitFullscreen();
+                }
+                lastTapTime = currentTime;
+            });
+
+            // Two Finger Pinch Zoom
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
+                    let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                    if (lastTouchDistance > 0) {
+                        adjustZoom((dist - lastTouchDistance) / 200);
+                    }
+                    lastTouchDistance = dist;
+                }
+            }, {passive: false});
+
+            window.addEventListener('touchend', () => lastTouchDistance = 0);
+        }
+
+        function adjustZoom(amt) {
+            zoom = Math.min(Math.max(0.5, zoom + amt), 2.5);
+            document.documentElement.style.setProperty('--zoom-level', zoom);
+        }
+
+        function showBirthday() {
+            $('#celebration-overlay').css('display', 'flex');
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        }
+
+        function toggleDrawer() { $('#tool-drawer').toggleClass('open'); }
+
         function snapShare() {
-            toggleDrawer(false);
+            $('#tool-drawer').removeClass('open');
             setTimeout(() => {
                 html2canvas(document.body).then(canvas => {
                     const link = document.createElement('a');
-                    link.download = 'Birthday_Countdown.png';
+                    link.download = 'BDay_Share.png';
                     link.href = canvas.toDataURL();
                     link.click();
                 });
-            }, 500);
-        }
-
-        function toggleDrawer(force) {
-            if (force === false) drawer.classList.remove('open');
-            else drawer.classList.toggle('open');
+            }, 600);
         }
     </script>
 </body>
-    </html>
+</html>
