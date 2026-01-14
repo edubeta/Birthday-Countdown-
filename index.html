@@ -7,11 +7,10 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3159/3159408.png">
-    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJlbiIsCiAgIm5hbWUiOiAiQmlydGhkYXkgQ291bnRkb3duIiwKICAic2hvcnRfbmFtZSI6ICJCOERheUNvdW50IiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjZmY2OWI0Igp9">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkJpcnRoZGF5IENvdW50ZG93biIsCiAgInNob3J0X25hbWUiOiAiQkRheSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAidGhlbWVfY29sb3IiOiAiIzAwMDAwMCIKfQ==">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flipclock/0.7.7/flipclock.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;600;800&family=Syncopate:wght@700&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flipclock/0.7.7/flipclock.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -19,10 +18,13 @@
 
     <style>
         :root {
-            --accent: #ff69b4;
-            --card-bg: rgba(10, 10, 15, 0.9);
-            --zoom: 1.0;
+            --accent: #ffffff;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --safe-top: env(safe-area-inset-top);
         }
+
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
 
         body, html {
             margin: 0; padding: 0; height: 100%; width: 100%;
@@ -31,212 +33,253 @@
             overflow: hidden;
         }
 
+        /* AI Fit Background */
         #bg-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover; background-position: center;
-            filter: brightness(0.4); z-index: -1;
-            transition: 1s ease-in-out;
+            background-size: cover; background-position: center 20%;
+            transition: background-image 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: -1;
+        }
+        #bg-overlay {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%),
+                        linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%);
         }
 
-        /* Main UI */
-        #main-wrapper {
-            height: 100vh; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            text-align: center; padding: 20px;
+        /* Main Viewport */
+        #viewport {
+            height: 100dvh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding-top: var(--safe-top);
         }
 
-        .bday-text {
-            font-family: 'Syncopate'; font-size: clamp(14px, 4vw, 24px);
-            letter-spacing: 5px; margin-bottom: 30px; text-transform: uppercase;
+        .status-badge {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            padding: 8px 20px;
+            border-radius: 100px;
+            border: 1px solid var(--glass-border);
+            font-size: 10px;
+            letter-spacing: 3px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            text-transform: uppercase;
         }
 
-        /* Clock Scaling */
-        .clock-container { transform: scale(var(--zoom)); }
-        .flip-clock-wrapper ul { width: 50px; height: 70px; margin: 3px; }
-        .flip-clock-wrapper ul li { line-height: 70px; }
+        /* FlipClock Customization - iOS Style */
+        .clock-wrapper { transform: scale(1.1); }
+        .flip-clock-wrapper ul { width: 45px; height: 65px; margin: 2px; }
+        .flip-clock-wrapper ul li { line-height: 65px; }
         .flip-clock-wrapper ul li a div div.inn { 
-            background-color: var(--card-bg) !important; color: var(--accent) !important;
-            font-size: 40px !important; border-radius: 8px;
+            background-color: #1a1a1a !important; color: var(--accent) !important;
+            font-size: 36px !important; border-radius: 12px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .flip-clock-divider .flip-clock-label { color: #ccc !important; font-size: 10px; bottom: -2em; }
+
+        /* Swipeable Bottom Toolbox */
+        #tool-drawer {
+            position: fixed; bottom: -350px; left: 0; width: 100%;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-top: 0.5px solid var(--glass-border);
+            border-radius: 30px 30px 0 0;
+            padding: 20px; transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 1000; height: 400px;
         }
 
-        /* Control Panel */
-        .controls {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 10px; z-index: 100;
+        #tool-drawer.open { transform: translateY(-350px); }
+
+        .handle {
+            width: 40px; height: 5px; background: rgba(255,255,255,0.3);
+            border-radius: 10px; margin: 0 auto 25px; cursor: pointer;
         }
 
-        .btn {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 10px 20px; border-radius: 50px; cursor: pointer;
-            backdrop-filter: blur(10px); font-size: 12px; font-weight: 800;
+        .tool-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;
         }
 
-        /* Modal Settings */
-        #settings-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 1000; padding: 40px;
+        .input-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 20px; border: 1px solid var(--glass-border); }
+        .input-group label { display: block; font-size: 10px; font-weight: 800; margin-bottom: 8px; color: #888; }
+        
+        input {
+            background: transparent; border: none; color: #fff; width: 100%;
+            font-family: inherit; font-size: 16px; outline: none;
         }
 
-        input[type="datetime-local"], input[type="file"] {
-            background: #222; border: 1px solid var(--accent);
-            color: #fff; padding: 15px; margin: 10px 0; width: 100%; max-width: 300px;
-            border-radius: 10px;
+        .action-btn {
+            background: #fff; color: #000; border: none; padding: 18px;
+            border-radius: 20px; font-weight: 800; width: 100%; margin-top: 15px;
+            font-size: 14px; transition: 0.2s;
         }
+        .action-btn:active { transform: scale(0.96); opacity: 0.8; }
 
-        /* Birthday Overlay */
-        #celebration {
-            position: fixed; inset: 0; display: none;
-            background: rgba(0,0,0,0.8); z-index: 2000;
-            flex-direction: column; align-items: center; justify-content: center;
+        /* Celebration Screen */
+        #celebration-overlay {
+            position: fixed; inset: 0; display: none; z-index: 5000;
+            background: rgba(0,0,0,0.9); flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
         }
+        #celebration-overlay h1 { font-family: 'Syncopate'; font-size: 2.5rem; color: #fff; }
 
-        #celebration h1 {
-            font-size: 3rem; font-family: 'Syncopate'; color: var(--accent);
-            animation: pulse 1s infinite alternate;
+        .ios-share-trigger {
+            position: fixed; bottom: 30px; right: 20px;
+            width: 50px; height: 50px; background: var(--glass);
+            backdrop-filter: blur(10px); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--glass-border); z-index: 500;
         }
-
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
     </style>
 </head>
 <body>
 
-    <div id="bg-container"></div>
+    <div id="bg-container">
+        <div id="bg-overlay"></div>
+    </div>
 
-    <div id="main-wrapper">
-        <div class="bday-text" id="status-text">Birthday is coming...</div>
-        
-        <div class="clock-container">
-            <div id="countdown-clock"></div>
+    <div id="viewport">
+        <div class="status-badge" id="badge">Birthday is coming...</div>
+        <div class="clock-wrapper">
+            <div id="main-clock"></div>
         </div>
     </div>
 
-    <div class="controls">
-        <button class="btn" onclick="openSettings()">SETTINGS</button>
-        <button class="btn" onclick="shareCapture()" id="share-btn">SHARE</button>
+    <div class="ios-share-trigger" onclick="toggleDrawer()">⚙️</div>
+
+    <div id="tool-drawer">
+        <div class="handle" onclick="toggleDrawer()"></div>
+        <div class="tool-grid">
+            <div class="input-group">
+                <label>MONTH & DAY</label>
+                <input type="date" id="bday-date">
+            </div>
+            <div class="input-group">
+                <label>TIME</label>
+                <input type="time" id="bday-time" value="00:00">
+            </div>
+            <div class="input-group" style="grid-column: span 2;">
+                <label>THEME COLOR (ACCENT)</label>
+                <input type="color" id="accent-color" value="#ffffff">
+            </div>
+            <div class="input-group" style="grid-column: span 2;">
+                <label>PORTRAIT PHOTO (AI FIT)</label>
+                <input type="file" id="bg-upload" accept="image/*" style="font-size: 10px;">
+            </div>
+        </div>
+        <button class="action-btn" onclick="applySettings()">SAVE SETTINGS</button>
+        <button class="action-btn" style="background:transparent; color:#fff; border:1px solid #333;" onclick="snapShare()">SCREENSHOT & SHARE</button>
     </div>
 
-    <div id="settings-modal">
-        <h2 style="margin-bottom: 20px;">Countdown Settings</h2>
-        <label>Birthday Date & Time</label>
-        <input type="datetime-local" id="target-date">
-        
-        <label>Upload Photo</label>
-        <input type="file" id="image-upload" accept="image/*">
-        
-        <button class="btn" style="background: var(--accent); margin-top: 20px;" onclick="saveSettings()">SAVE & START</button>
-        <button class="btn" style="margin-top: 10px;" onclick="closeSettings()">CLOSE</button>
-    </div>
-
-    <div id="celebration">
-        <h1>HAPPY BIRTHDAY!</h1>
-        <button class="btn" onclick="location.reload()" style="margin-top:30px">RESET</button>
+    <div id="celebration-overlay">
+        <h1 id="bday-msg">HAPPY BIRTHDAY!</h1>
+        <button class="action-btn" style="width: 200px" onclick="location.reload()">RESTART</button>
     </div>
 
     <script>
         let clock;
-        const bgContainer = document.getElementById('bg-container');
-        const targetInput = document.getElementById('target-date');
-        const imageInput = document.getElementById('image-upload');
+        const drawer = document.getElementById('tool-drawer');
 
-        $(document).ready(function() {
-            initApp();
+        $(document).ready(() => {
+            loadSavedData();
+            // Handle simple swipe down to close
+            let startY;
+            drawer.addEventListener('touchstart', e => startY = e.touches[0].clientY);
+            drawer.addEventListener('touchmove', e => {
+                let moveY = e.touches[0].clientY;
+                if (moveY - startY > 50) toggleDrawer(false);
+            });
         });
 
-        function initApp() {
-            // Load Saved Settings
-            const savedDate = localStorage.getItem('bday_date');
-            const savedImg = localStorage.getItem('bday_img');
+        function loadSavedData() {
+            const date = localStorage.getItem('pwa_bday_date') || '12-31';
+            const time = localStorage.getItem('pwa_bday_time') || '00:00';
+            const img = localStorage.getItem('pwa_bday_img');
+            const color = localStorage.getItem('pwa_bday_color') || '#ffffff';
 
-            if (savedImg) {
-                bgContainer.style.backgroundImage = `url(${savedImg})`;
-            } else {
-                bgContainer.style.backgroundImage = `url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2048')`;
-            }
-
-            if (savedDate) {
-                startCountdown(new Date(savedDate));
-            } else {
-                // Default to 24 hours from now if empty
-                let tomorrow = new Date();
-                tomorrow.setHours(tomorrow.getHours() + 24);
-                startCountdown(tomorrow);
-            }
+            if(img) document.getElementById('bg-container').style.backgroundImage = `url(${img})`;
+            else document.getElementById('bg-container').style.backgroundImage = `url('https://images.unsplash.com/photo-1464349172904-124bb544f80a?q=80&w=2000')`;
+            
+            document.documentElement.style.setProperty('--accent', color);
+            startLogic(date, time);
         }
 
-        function startCountdown(target) {
-            const now = new Date();
-            let diff = (target.getTime() / 1000) - (now.getTime() / 1000);
+        function startLogic(dateStr, timeStr) {
+            // dateStr format expected: "MM-DD"
+            const parts = dateStr.split('-');
+            const month = parseInt(parts[1]) - 1;
+            const day = parseInt(parts[2]);
+            const timeParts = timeStr.split(':');
+            
+            let now = new Date();
+            let target = new Date(now.getFullYear(), month, day, timeParts[0], timeParts[1]);
 
-            if (diff <= 0) {
-                showCelebration();
-                diff = 0;
+            // Auto-Year Logic: If date passed this year, set to next year
+            if (target < now) {
+                target.setFullYear(now.getFullYear() + 1);
             }
 
-            if(clock) $('#countdown-clock').empty();
-
-            clock = $('#countdown-clock').FlipClock(diff, {
+            let diff = (target.getTime() / 1000) - (now.getTime() / 1000);
+            
+            clock = $('#main-clock').FlipClock(diff, {
                 clockFace: 'DailyCounter',
                 countdown: true,
                 callbacks: {
-                    stop: function() {
-                        showCelebration();
-                    }
+                    stop: () => triggerCelebration()
                 }
             });
         }
 
-        function saveSettings() {
-            if (targetInput.value) {
-                localStorage.setItem('bday_date', targetInput.value);
-            }
+        function applySettings() {
+            const dateVal = document.getElementById('bday-date').value; // YYYY-MM-DD
+            const timeVal = document.getElementById('bday-time').value;
+            const colorVal = document.getElementById('accent-color').value;
+            const file = document.getElementById('bg-upload').files[0];
 
-            const file = imageInput.files[0];
+            if (dateVal) localStorage.setItem('pwa_bday_date', dateVal);
+            localStorage.setItem('pwa_bday_time', timeVal);
+            localStorage.setItem('pwa_bday_color', colorVal);
+
             if (file) {
                 const reader = new FileReader();
-                reader.onloadend = function() {
-                    localStorage.setItem('bday_img', reader.result);
-                    bgContainer.style.backgroundImage = `url(${reader.result})`;
-                }
+                reader.onloadend = () => {
+                    localStorage.setItem('pwa_bday_img', reader.result);
+                    location.reload();
+                };
                 reader.readAsDataURL(file);
+            } else {
+                location.reload();
             }
-
-            closeSettings();
-            setTimeout(() => { location.reload(); }, 500);
         }
 
-        function showCelebration() {
-            document.getElementById('celebration').style.display = 'flex';
-            document.getElementById('status-text').innerText = "IT'S PARTY TIME!";
-            
-            // Confetti Cannon
-            var duration = 15 * 1000;
-            var animationEnd = Date.now() + duration;
-            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 3000 };
+        function triggerCelebration() {
+            $('#celebration-overlay').css('display', 'flex');
+            const end = Date.now() + (15 * 1000);
+            const colors = ['#ffffff', document.documentElement.style.getPropertyValue('--accent')];
 
-            var interval = setInterval(function() {
-                var timeLeft = animationEnd - Date.now();
-                if (timeLeft <= 0) return clearInterval(interval);
-                var particleCount = 50 * (timeLeft / duration);
-                confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
-            }, 250);
+            (function frame() {
+                confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0 }, colors: colors });
+                confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
         }
 
-        function shareCapture() {
-            const btn = document.getElementById('share-btn');
-            btn.innerText = "CAPTURING...";
-            
-            html2canvas(document.body).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'birthday-countdown.png';
-                link.href = canvas.toDataURL();
-                link.click();
-                btn.innerText = "SHARE";
-            });
+        function snapShare() {
+            toggleDrawer(false);
+            setTimeout(() => {
+                html2canvas(document.body).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'Birthday_Countdown.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                });
+            }, 500);
         }
 
-        function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
-        function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
+        function toggleDrawer(force) {
+            if (force === false) drawer.classList.remove('open');
+            else drawer.classList.toggle('open');
+        }
     </script>
 </body>
-</html>
+    </html>
