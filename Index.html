@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Birthday Countdown</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3159/3159408.png">
+    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJlbiIsCiAgIm5hbWUiOiAiQmlydGhkYXkgQ291bnRkb3duIiwKICAic2hvcnRfbmFtZSI6ICJCOERheUNvdW50IiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjZmY2OWI0Igp9">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flipclock/0.7.7/flipclock.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flipclock/0.7.7/flipclock.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --accent: #ff69b4;
+            --card-bg: rgba(10, 10, 15, 0.9);
+            --zoom: 1.0;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            background: #000; color: #fff;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+        }
+
+        #bg-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            filter: brightness(0.4); z-index: -1;
+            transition: 1s ease-in-out;
+        }
+
+        /* Main UI */
+        #main-wrapper {
+            height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center; padding: 20px;
+        }
+
+        .bday-text {
+            font-family: 'Syncopate'; font-size: clamp(14px, 4vw, 24px);
+            letter-spacing: 5px; margin-bottom: 30px; text-transform: uppercase;
+        }
+
+        /* Clock Scaling */
+        .clock-container { transform: scale(var(--zoom)); }
+        .flip-clock-wrapper ul { width: 50px; height: 70px; margin: 3px; }
+        .flip-clock-wrapper ul li { line-height: 70px; }
+        .flip-clock-wrapper ul li a div div.inn { 
+            background-color: var(--card-bg) !important; color: var(--accent) !important;
+            font-size: 40px !important; border-radius: 8px;
+        }
+
+        /* Control Panel */
+        .controls {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; z-index: 100;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 10px 20px; border-radius: 50px; cursor: pointer;
+            backdrop-filter: blur(10px); font-size: 12px; font-weight: 800;
+        }
+
+        /* Modal Settings */
+        #settings-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; padding: 40px;
+        }
+
+        input[type="datetime-local"], input[type="file"] {
+            background: #222; border: 1px solid var(--accent);
+            color: #fff; padding: 15px; margin: 10px 0; width: 100%; max-width: 300px;
+            border-radius: 10px;
+        }
+
+        /* Birthday Overlay */
+        #celebration {
+            position: fixed; inset: 0; display: none;
+            background: rgba(0,0,0,0.8); z-index: 2000;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        #celebration h1 {
+            font-size: 3rem; font-family: 'Syncopate'; color: var(--accent);
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+    </style>
+</head>
+<body>
+
+    <div id="bg-container"></div>
+
+    <div id="main-wrapper">
+        <div class="bday-text" id="status-text">Birthday is coming...</div>
+        
+        <div class="clock-container">
+            <div id="countdown-clock"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="openSettings()">SETTINGS</button>
+        <button class="btn" onclick="shareCapture()" id="share-btn">SHARE</button>
+    </div>
+
+    <div id="settings-modal">
+        <h2 style="margin-bottom: 20px;">Countdown Settings</h2>
+        <label>Birthday Date & Time</label>
+        <input type="datetime-local" id="target-date">
+        
+        <label>Upload Photo</label>
+        <input type="file" id="image-upload" accept="image/*">
+        
+        <button class="btn" style="background: var(--accent); margin-top: 20px;" onclick="saveSettings()">SAVE & START</button>
+        <button class="btn" style="margin-top: 10px;" onclick="closeSettings()">CLOSE</button>
+    </div>
+
+    <div id="celebration">
+        <h1>HAPPY BIRTHDAY!</h1>
+        <button class="btn" onclick="location.reload()" style="margin-top:30px">RESET</button>
+    </div>
+
+    <script>
+        let clock;
+        const bgContainer = document.getElementById('bg-container');
+        const targetInput = document.getElementById('target-date');
+        const imageInput = document.getElementById('image-upload');
+
+        $(document).ready(function() {
+            initApp();
+        });
+
+        function initApp() {
+            // Load Saved Settings
+            const savedDate = localStorage.getItem('bday_date');
+            const savedImg = localStorage.getItem('bday_img');
+
+            if (savedImg) {
+                bgContainer.style.backgroundImage = `url(${savedImg})`;
+            } else {
+                bgContainer.style.backgroundImage = `url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2048')`;
+            }
+
+            if (savedDate) {
+                startCountdown(new Date(savedDate));
+            } else {
+                // Default to 24 hours from now if empty
+                let tomorrow = new Date();
+                tomorrow.setHours(tomorrow.getHours() + 24);
+                startCountdown(tomorrow);
+            }
+        }
+
+        function startCountdown(target) {
+            const now = new Date();
+            let diff = (target.getTime() / 1000) - (now.getTime() / 1000);
+
+            if (diff <= 0) {
+                showCelebration();
+                diff = 0;
+            }
+
+            if(clock) $('#countdown-clock').empty();
+
+            clock = $('#countdown-clock').FlipClock(diff, {
+                clockFace: 'DailyCounter',
+                countdown: true,
+                callbacks: {
+                    stop: function() {
+                        showCelebration();
+                    }
+                }
+            });
+        }
+
+        function saveSettings() {
+            if (targetInput.value) {
+                localStorage.setItem('bday_date', targetInput.value);
+            }
+
+            const file = imageInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    localStorage.setItem('bday_img', reader.result);
+                    bgContainer.style.backgroundImage = `url(${reader.result})`;
+                }
+                reader.readAsDataURL(file);
+            }
+
+            closeSettings();
+            setTimeout(() => { location.reload(); }, 500);
+        }
+
+        function showCelebration() {
+            document.getElementById('celebration').style.display = 'flex';
+            document.getElementById('status-text').innerText = "IT'S PARTY TIME!";
+            
+            // Confetti Cannon
+            var duration = 15 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 3000 };
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        function shareCapture() {
+            const btn = document.getElementById('share-btn');
+            btn.innerText = "CAPTURING...";
+            
+            html2canvas(document.body).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'birthday-countdown.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                btn.innerText = "SHARE";
+            });
+        }
+
+        function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
+        function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
+    </script>
+</body>
+</html>
